@@ -35,7 +35,6 @@ class AddDeliveryPartner(APIView):
 
     @staticmethod
     def post(request):
-        print(request.data)
         vehicle_exist = Vehicle.objects.filter(vehicle_type = request.data['vehicle_type'])
         serializer = DeliveryPartnerSerializer(data=request.data)
         if vehicle_exist is not None:
@@ -53,10 +52,10 @@ class Orders(APIView):
     @staticmethod
     def check_per_slot_100kg(data) -> bool:
         now = datetime.datetime.now()
-        # current_hour = int(now.hour)
-        # current_min = int(now.minute)
-        current_hour = 6
-        current_min = 2
+        current_hour = int(now.hour)
+        current_min = int(now.minute)
+        # current_hour = 6
+        # current_min = 2
         if 6 <= current_hour < 9 or (current_hour == 9 and current_min == 0):
             hours_list = [6,9]
         elif 9 <= current_hour < 13 or (current_hour == 13 and current_min == 0):
@@ -88,7 +87,6 @@ class Orders(APIView):
         now = datetime.datetime.now()
         order_obj = AssignedOrder.objects.filter(order_assigned_date__year=now.year, order_assigned_date__month=now.month,
                                                  order_assigned_date__day=now.day).values('vehicle_type')
-        # print(order_obj)
         if not order_obj:
             return True, [1, 3, 2]
         else:
@@ -105,7 +103,6 @@ class Orders(APIView):
             truck_available = 1 - truck_count
             bike_available = 3 - bike_count
             scooter_count = 2 - scooter_count
-            print(truck_available, bike_available, scooter_count)
             if truck_count > 1 or bike_count > 3 or scooter_count > 2:
                 return False, [truck_available, bike_available, scooter_count]
             else:
@@ -145,7 +142,6 @@ class Orders(APIView):
 
 
     def every_vehicle_available(self, weight):
-        print("Entering")
         scooter = []
         truck = []
         bike = []
@@ -199,7 +195,6 @@ class Orders(APIView):
         bike = []
         scooter = []
         truck = []
-        print(weight)
 
         if truckAvailable == True and self.total_weight_fun(weight)[0]:
             truckEffiecent, total_weight = self.total_weight_fun(weight)
@@ -209,7 +204,6 @@ class Orders(APIView):
                 for dic in weight:
                     current_ids.append(dic['order_id'])
                 truck.append(current_ids)
-                # print(truck, scooter, bike)
                 return truck, scooter, bike
             else:
                 self.every_vehicle_available(weight)
@@ -219,7 +213,6 @@ class Orders(APIView):
             for dic in weight:
                 current_ids.append(dic['order_id'])
             truck.append(current_ids)
-            # print(truck, scooter, bike)
             return truck, scooter, bike
 
         elif weight[0]['order_weight'] > 50 and truckAvailable == False:
@@ -232,11 +225,6 @@ class Orders(APIView):
 
 
     def post(self, request, format=None):
-        # delivery_partner_obj = Order.objects.all()
-        # serializer = OrderSerializer(delivery_partner_obj, many=True)
-        # return Response(serializer.data)
-        # print(type(request.data))
-        print(request.data)
         if isinstance(request.data, list):
             # request having multiple object
             serializer = OrderSerializer(data=request.data, many=True)
@@ -334,10 +322,10 @@ class Orders(APIView):
                                 assign_data.append(current_scooter_dic)
 
                         if bike != [] or bike != [[]]:
-                            print("Bike", bike)
                             if not bike_delivery_partners:
-                                # return 404 truck driver not found
-                                pass
+                                return Response({
+                                    "delivery partner": "Delivery boy is not available for Bike today"},
+                                    status=status.HTTP_400_BAD_REQUEST)
                             for bike_list_iterator in bike:
                                 current_bike_dic = {}
                                 current_bike_dic['vehicle_type'] = "Bike"
